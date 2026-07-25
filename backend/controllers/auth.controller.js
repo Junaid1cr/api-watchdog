@@ -7,30 +7,38 @@ import { sendResetPasswordEmail } from "../services/email.js";
 const SALT_ROUNDS = 10;
 
 const signToken = (user) =>
-  jwt.sign(
-    { id: user._id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-  );
+  jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
 
 const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ error: "name, email, and password are all required." });
+      return res
+        .status(400)
+        .json({ error: "name, email, and password are all required." });
     }
     if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters." });
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters." });
     }
 
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
-      return res.status(409).json({ error: "An account with this email already exists." });
+      return res
+        .status(409)
+        .json({ error: "An account with this email already exists." });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const user = await User.create({ name, email: email.toLowerCase(), passwordHash });
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      passwordHash,
+    });
 
     const token = signToken(user);
 
@@ -48,7 +56,9 @@ const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: "email and password are required." });
+      return res
+        .status(400)
+        .json({ error: "email and password are required." });
     }
 
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -93,7 +103,8 @@ const forgotPassword = async (req, res, next) => {
     }
 
     const genericResponse = {
-      message: "If an account with that email exists, a reset link has been sent.",
+      message:
+        "If an account with that email exists, a reset link has been sent.",
     };
 
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -102,12 +113,16 @@ const forgotPassword = async (req, res, next) => {
     }
 
     const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
-
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+    console.log("helllo");
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
-    await user.save();
 
+    await user.save();
+    console.log("helllo2");
     try {
       await sendResetPasswordEmail(user.email, rawToken);
     } catch (emailErr) {
@@ -115,7 +130,11 @@ const forgotPassword = async (req, res, next) => {
       user.resetPasswordExpires = null;
       await user.save();
       console.error("Failed to send reset email:", emailErr.message);
-      return res.status(502).json({ error: "Could not send the reset email. Please try again shortly." });
+      return res
+        .status(502)
+        .json({
+          error: "Could not send the reset email. Please try again shortly.",
+        });
     }
 
     return res.status(200).json(genericResponse);
@@ -129,10 +148,14 @@ const resetPassword = async (req, res, next) => {
     const { token, newPassword } = req.body;
 
     if (!token || !newPassword) {
-      return res.status(400).json({ error: "token and newPassword are required." });
+      return res
+        .status(400)
+        .json({ error: "token and newPassword are required." });
     }
     if (newPassword.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters." });
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters." });
     }
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -143,7 +166,9 @@ const resetPassword = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(400).json({ error: "This reset link is invalid or has expired." });
+      return res
+        .status(400)
+        .json({ error: "This reset link is invalid or has expired." });
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -151,7 +176,9 @@ const resetPassword = async (req, res, next) => {
     user.resetPasswordExpires = null;
     await user.save();
 
-    return res.status(200).json({ message: "Password reset successfully. You can now log in." });
+    return res
+      .status(200)
+      .json({ message: "Password reset successfully. You can now log in." });
   } catch (err) {
     next(err);
   }
