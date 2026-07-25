@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 
 const sendResetPasswordEmail = async (toEmail, resetToken) => {
   const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-
+  console.log("Sending reset password email to:", toEmail);
   await transporter.sendMail({
     from: `"API Watchdog" <${process.env.EMAIL_USER}>`,
     to: toEmail,
