@@ -125,16 +125,15 @@ const forgotPassword = async (req, res, next) => {
     console.log("helllo2");
     try {
       await sendResetPasswordEmail(user.email, rawToken);
+      console.log("helllo3");
     } catch (emailErr) {
       user.resetPasswordToken = null;
       user.resetPasswordExpires = null;
       await user.save();
       console.error("Failed to send reset email:", emailErr.message);
-      return res
-        .status(502)
-        .json({
-          error: "Could not send the reset email. Please try again shortly.",
-        });
+      return res.status(502).json({
+        error: "Could not send the reset email. Please try again shortly.",
+      });
     }
 
     return res.status(200).json(genericResponse);
