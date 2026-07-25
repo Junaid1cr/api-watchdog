@@ -6,6 +6,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_APP_PASSWORD,
   },
+  port: 587,
+  secure: false,
+  family: 4,
 });
 
 const sendResetPasswordEmail = async (toEmail, resetToken) => {
