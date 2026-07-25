@@ -1,32 +1,31 @@
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-  port: 587,
-  secure: false,
-  family: 4,
-  connectionTimeout: 10000, // 10s to establish connection
-  greetingTimeout: 10000, // 10s to get SMTP greeting
-  socketTimeout: 15000, // 15s of inactivity on the socket
-});
-
 const sendResetPasswordEmail = async (toEmail, resetToken) => {
   const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+
   console.log("Sending reset password email to:", toEmail);
-  await transporter.sendMail({
-    from: `"API Watchdog" <${process.env.EMAIL_USER}>`,
-    to: toEmail,
-    subject: "Reset your API Watchdog password",
-    html: `
-      <p>You requested a password reset for your API Watchdog account.</p>
-      <p><a href="${resetLink}">Click here to reset your password</a></p>
-      <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
-    `,
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "api-key": process.env.BREVO_API_KEY,
+    },
+    body: JSON.stringify({
+      sender: { name: "API Watchdog", email: process.env.EMAIL_USER },
+      to: [{ email: toEmail }],
+      subject: "Reset your API Watchdog password",
+      htmlContent: `
+        <p>You requested a password reset for your API Watchdog account.</p>
+        <p><a href="${resetLink}">Click here to reset your password</a></p>
+        <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+      `,
+    }),
   });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo API error (${response.status}): ${errorBody}`);
+  }
 };
 
 export { sendResetPasswordEmail };
