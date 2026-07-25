@@ -9,6 +9,9 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   family: 4,
+  connectionTimeout: 10000, // 10s to establish connection
+  greetingTimeout: 10000, // 10s to get SMTP greeting
+  socketTimeout: 15000, // 15s of inactivity on the socket
 });
 
 const sendResetPasswordEmail = async (toEmail, resetToken) => {
